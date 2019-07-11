@@ -23,6 +23,11 @@
 
 - (id)initWithMessageArchivingStorage:(id <XMPPMessageArchivingStorage>)storage;
 - (id)initWithMessageArchivingStorage:(id <XMPPMessageArchivingStorage>)storage dispatchQueue:(dispatch_queue_t)queue;
+- (void)listCollectionsWithJid:(NSString *)jid start:(NSDate*)start end:(NSDate*)end;
+
+- (void)retrieveCollectionsWithJid:(NSString *)jid start:(NSDate*)start;
+- (void)listCollectionsWithJid:(NSString *)jid;
+- (void)listCollectionsWithJid:(NSString *)jid start:(NSDate*)start;
 
 @property (readonly, strong) id <XMPPMessageArchivingStorage> xmppMessageArchivingStorage;
 
@@ -51,6 +56,7 @@
 **/
 @property (readwrite, copy) NSXMLElement *preferences;
 
+@property(nonatomic, assign) NSUInteger maxResults;
 @end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

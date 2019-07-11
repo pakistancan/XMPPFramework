@@ -55,7 +55,7 @@
 		{
 			XMPPLogError(@"%@: %@ - Unable to configure storage!", THIS_FILE, THIS_METHOD);
 		}
-		
+		_maxResults = 100;
 		NSXMLElement *_default = [NSXMLElement elementWithName:@"default"];
 		[_default addAttributeWithName:@"expire" stringValue:@"604800"];
 		[_default addAttributeWithName:@"save" stringValue:@"body"];
@@ -357,6 +357,11 @@
 	[sender sendElement:iq];
 }
 
+-(void)processChat:(NSXMLElement*)chat{
+	XMPPLogVerbose(@"%@: chat:: %@", THIS_FILE, chat);
+
+}
+
 - (BOOL)xmppStream:(XMPPStream *)sender didReceiveIQ:(XMPPIQ *)iq
 {
 	NSString *type = [iq type];
@@ -367,6 +372,10 @@
 		if (pref)
 		{
 			[self setPreferences:pref];
+		}
+		NSXMLElement* chat = [iq elementForName:@"chat" xmlns:XMLNS_XMPP_ARCHIVE];
+		if (chat && [chat hasResultSet]) {
+			[self processChat:chat];
 		}
 	}
 	else if ([type isEqualToString:@"set"])
@@ -427,5 +436,69 @@
 		[xmppMessageArchivingStorage archiveMessage:message outgoing:NO xmppStream:sender];
 	}
 }
+
+
+- (void)retrieveCollectionsWithJid:(NSString *)jid start:(NSDate*)start{
+	XMPPLogTrace();
+	
+	NSXMLElement *list = [NSXMLElement elementWithName:@"retrieve" xmlns:XMLNS_XMPP_ARCHIVE];
+	if (nil!=jid && ![jid isEqualToString:@""]) {
+		[list addAttributeWithName:@"with" stringValue:jid];
+	}
+	if (nil!=start) {
+		[list addAttributeWithName:@"start" stringValue:[start xmppDateTimeString]];
+	}
+	
+	if (0!=_maxResults) {
+		NSXMLElement *setElement = [NSXMLElement elementWithName:@"set" xmlns:@"http://jabber.org/protocol/rsm"];
+		[setElement addChild:[NSXMLElement elementWithName:@"max" numberValue:@(_maxResults)]];
+		[list addChild:setElement];
+	}
+	
+	
+	NSString *uuid = [xmppStream generateUUID];
+	XMPPIQ *iq = [XMPPIQ iqWithType:@"get" to:nil elementID:uuid child:list];
+	
+	[xmppStream sendElement:iq];
+}
+
+- (void)listCollectionsWithJid:(NSString *)jid{
+	[self listCollectionsWithJid:jid start:nil end:nil];
+}
+
+- (void)listCollectionsWithJid:(NSString *)jid start:(NSDate*)start{
+	[self listCollectionsWithJid:jid start:start end:nil];
+}
+
+- (void)listCollectionsWithJid:(NSString *)jid start:(NSDate*)start end:(NSDate*)end
+{
+	XMPPLogTrace();
+	
+	NSXMLElement *list = [NSXMLElement elementWithName:@"list" xmlns:XMLNS_XMPP_ARCHIVE];
+	if (nil!=jid && ![jid isEqualToString:@""]) {
+		[list addAttributeWithName:@"with" stringValue:jid];
+	}
+	if (nil!=start) {
+		[list addAttributeWithName:@"start" stringValue:[start xmppDateTimeString]];
+	}
+	if (nil!=end) {
+		[list addAttributeWithName:@"end" stringValue:[end xmppDateTimeString]];
+	}
+	
+	if (0!=_maxResults) {
+		NSXMLElement *setElement = [NSXMLElement elementWithName:@"set" xmlns:@"http://jabber.org/protocol/rsm"];
+		[setElement addChild:[NSXMLElement elementWithName:@"max" numberValue:@(_maxResults)]];
+		[list addChild:setElement];
+	}
+	
+	
+	
+	NSString *uuid = [xmppStream generateUUID];
+	XMPPIQ *iq = [XMPPIQ iqWithType:@"get" to:nil elementID:uuid child:list];
+	
+	[xmppStream sendElement:iq];
+	
+}
+
 
 @end
